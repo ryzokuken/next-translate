@@ -2,7 +2,7 @@
   "compilerOptions": {
     "strict": true,
     "module": "ES2020",
-    "target": "es5",
+    "target": "es6",
     "jsx": "react",
     "removeComments": true,
     "moduleResolution": "node",

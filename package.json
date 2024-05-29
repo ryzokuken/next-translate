@@ -108,5 +108,8 @@
     "transform": {
       "^.+\\.(j|t)sx?$": "babel-jest"
     }
+  },
+  "dependencies": {
+    "messageformat": "4.0.0-7"
   }
 }
