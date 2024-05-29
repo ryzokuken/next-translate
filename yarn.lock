@@ -4249,6 +4249,11 @@ merge-stream@^2.0.0:
   resolved "https://registry.yarnpkg.com/merge-stream/-/merge-stream-2.0.0.tgz#52823629a14dd00c9770fb6ad47dc6310f2c1f60"
   integrity sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==
 
+messageformat@4.0.0-7:
+  version "4.0.0-7"
+  resolved "https://registry.yarnpkg.com/messageformat/-/messageformat-4.0.0-7.tgz#bab19dfb939ff8b20ec154839364e275b9eaf05c"
+  integrity sha512-e7Ev5SNMHQ02dZPlc2blZWum1kB2B3jGQAskO97cZd9H/Eo8BF1GMhigswTNbh/2itpbDqa0jtBz9+VcRgfiQA==
+
 methods@^1.1.2, methods@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/methods/-/methods-1.1.2.tgz#5529a4d67654134edcc5266656835b0f851afcee"
