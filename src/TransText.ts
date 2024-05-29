@@ -8,7 +8,6 @@ type ValueTransProps = Pick<TransProps, 'components'> & {
 }
 
 export default function TransText({ text, components }: ValueTransProps): any {
-  // console.log(text);
   return useMemo(
     () =>
       !components || components.length === 0

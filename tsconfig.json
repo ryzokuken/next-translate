@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "ES2020",
-    "target": "es6",
+    "module": "ESNext",
+    "target": "ESNext",
     "jsx": "react",
     "removeComments": true,
     "moduleResolution": "node",
@@ -11,10 +11,11 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "declaration": true,
-    "lib": ["esnext", "dom"],
+    "lib": ["ESNext", "dom"],
     "forceConsistentCasingInFileNames": true,
     "outDir": "./lib/esm",
-    "declarationDir": "./types"
+    "declarationDir": "./types",
+    "incremental": true
   },
   "include": ["./src"]
 }
