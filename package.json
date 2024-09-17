@@ -18,6 +18,11 @@
     "locales",
     "globalization"
   ],
+  "private": true,
+  "workspaces": [
+    "examples/basic",
+    "."
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/vinissimus/next-translate.git"
