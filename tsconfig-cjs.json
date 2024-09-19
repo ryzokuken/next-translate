@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "CommonJS",
-    "target": "ESNext",
+    "target": "ES2021",
     "outDir": "./lib/cjs",
     "declaration": false,
     "declarationDir": null

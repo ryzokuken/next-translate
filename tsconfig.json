@@ -2,7 +2,7 @@
   "compilerOptions": {
     "strict": true,
     "module": "ESNext",
-    "target": "ESNext",
+    "target": "ES2021",
     "jsx": "react",
     "removeComments": true,
     "moduleResolution": "node",
