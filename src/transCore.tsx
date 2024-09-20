@@ -1,4 +1,5 @@
 import { MessageFormat, MessageSyntaxError } from 'messageformat'
+import { isMF2ComplexMessage } from './messageFormatHelpers'
 import {
   I18nConfig,
   I18nDictionary,
@@ -177,7 +178,7 @@ function interpolation({
   config: I18nConfig
   lang?: string | undefined
 }): string {
-  if (!text || !query) return text || ''
+  if (!text) return text || ''
 
   const escapeRegex = (str: string) =>
     str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
@@ -187,44 +188,55 @@ function interpolation({
     suffix = '}}',
   } = config.interpolation || {}
 
-  // This is a "dead" branch. BNEF doesn't use the interpolation feature and some of the test cases
-  // are convoluted enough that attempting to make it work with MF2 would be a massive waste of time
-  // so if format is set, we use the original logic but this is never practically the case for us,
-  // it's just to not have false negatives in the test suite.
-  if (format) {
-    const regexEnd =
-      suffix === '' ? '' : `(?:[\\s,]+([\\w-]*))?\\s*${escapeRegex(suffix)}`
-    return Object.keys(query).reduce((all, varKey) => {
-      const regex = new RegExp(
-        `${escapeRegex(prefix)}\\s*${varKey}${regexEnd}`,
-        'gm'
-      )
-      // $1 is the first match group
-      return all.replace(regex, (_match, $1) => {
-        // $1 undefined can mean either no formatting requested: "{{name}}"
-        // or no format name given: "{{name, }}" -> ignore
-        return $1 && format
-          ? (format(query[varKey], $1, lang) as string)
-          : (query[varKey] as string)
-      })
-    }, text)
+  if (query) {
+    // This is a "dead" branch. BNEF doesn't use the interpolation feature and some of the test cases
+    // are convoluted enough that attempting to make it work with MF2 would be a massive waste of time
+    // so if format is set, we use the original logic but this is never practically the case for us,
+    // it's just to not have false negatives in the test suite.
+    if (format) {
+      const regexEnd =
+        suffix === '' ? '' : `(?:[\\s,]+([\\w-]*))?\\s*${escapeRegex(suffix)}`
+      return Object.keys(query).reduce((all, varKey) => {
+        const regex = new RegExp(
+          `${escapeRegex(prefix)}\\s*${varKey}${regexEnd}`,
+          'gm'
+        )
+        // $1 is the first match group
+        return all.replace(regex, (_match, $1) => {
+          // $1 undefined can mean either no formatting requested: "{{name}}"
+          // or no format name given: "{{name, }}" -> ignore
+          return $1 && format
+            ? (format(query[varKey], $1, lang) as string)
+            : (query[varKey] as string)
+        })
+      }, text)
+    }
   }
 
-  const whitespacesRE = '(?:\\s*)?'
-  // If the prefix is non-empty, replace the prefix followed by whitespace.
-  const prefixRE = prefix ? `${escapeRegex(prefix)}${whitespacesRE}` : ''
-  // If the suffix is non-empty, replace whitespace followed by the suffix.
-  const suffixRE = suffix ? `${whitespacesRE}${escapeRegex(suffix)}` : ''
-  // The entire variable reference is the prefix, followed by the variable
-  // reference, then the suffix.
-  const varRE = new RegExp(`${prefixRE}([\\d\\w]+)(?:,.*?)?${suffixRE}`, 'g')
-  // Convert variable reference syntax to MF2.
-  const mfText = text.replaceAll(varRE, '{$$$1}')
+  // If the message is already in MF2, we should skip the code that translates
+  // the message into MF2
+  let mfText = text
+  if (!isMF2ComplexMessage(text)) {
+    const whitespacesRE = '(?:\\s*)?'
+    // If the prefix is non-empty, replace the prefix followed by whitespace.
+    const prefixRE = prefix ? `${escapeRegex(prefix)}${whitespacesRE}` : ''
+    // If the suffix is non-empty, replace whitespace followed by the suffix.
+    const suffixRE = suffix ? `${whitespacesRE}${escapeRegex(suffix)}` : ''
+    // The entire variable reference is the prefix, followed by the variable
+    // reference, then the suffix.
+    const varRE = new RegExp(`${prefixRE}([\\d\\w]+)(?:,.*?)?${suffixRE}`, 'g')
+    // Convert variable reference syntax to MF2.
+    mfText = text.replaceAll(varRE, '{$$$1}')
+  }
   let result = text;
   try {
      // Create an MF2 formatter and format the result as a string.
     const mf = new MessageFormat(mfText, lang)
-    result = mf.format(query)
+    if (query) {
+      result = mf.format(query)
+    } else {
+      result = mf.format()
+    }
   } catch (e) {
     if (!(e instanceof MessageSyntaxError)) {
         throw e

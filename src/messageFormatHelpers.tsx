@@ -6,6 +6,18 @@ import type {
 import React from 'react'
 import type { ReactElement } from 'react'
 
+export function isMF2ComplexMessage(message: string) : boolean {
+  // We can tell it's an MF2 complex message because either:
+  // it begins with a .match, .local, or .input
+  // or it begins with {{
+  // Note: there is an ambiguity because the message {{foo}} might
+  // either be an MF2 complex message, or a message with a single
+  // interpolated variable in next-translate's native format.
+  // We assume this is an MF2 message, but it might not always be correct.
+  return (message.startsWith(".match") || message.startsWith(".local")
+   || message.startsWith(".input") || message.startsWith("{{"));
+}
+
 // Converts markup placeholders to MF2
 // Note: Numeric markup tags are prefixed with an underscore
 // because in MF2, a markup tag name can't begin with a digit.
