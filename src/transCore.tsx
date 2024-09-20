@@ -1,4 +1,4 @@
-import { MessageFormat } from 'messageformat'
+import { MessageFormat, MessageSyntaxError } from 'messageformat'
 import {
   I18nConfig,
   I18nDictionary,
@@ -243,9 +243,17 @@ function interpolation({
   const varRE = new RegExp(`${prefixRE}([\\d\\w]+)(?:,.*?)?${suffixRE}`, 'g')
   // Convert variable reference syntax to MF2.
   const mfText = text.replaceAll(varRE, '{$$$1}')
-  // Create an MF2 formatter and format the result as a string.
-  const mf = new MessageFormat(mfText, lang)
-  return mf.format(query)
+  let result = text;
+  try {
+     // Create an MF2 formatter and format the result as a string.
+    const mf = new MessageFormat(mfText, lang)
+    result = mf.format(query)
+  } catch (e) {
+    if (!(e instanceof MessageSyntaxError)) {
+        throw e
+    }
+  }
+  return result
 }
 
 function objectInterpolation({
