@@ -1,4 +1,4 @@
-import { MessageFormat } from 'messageformat'
+import { MessageFormat, MessageSyntaxError, type MessagePart } from 'messageformat'
 import {
   convertToMf2,
   MessagePartsToTree,
@@ -12,10 +12,18 @@ export default function formatElements(
 ): string | ReactNode[] {
   // Convert message to MF2 syntax
   const message = convertToMf2(value)
-  // Create an MF2 formatter
-  const mf = new MessageFormat(message)
-  // Format the MF2 message to a linear sequence of parts
-  const list = mf.formatToParts()
+  let list : MessagePart[] = []
+  try {
+      // Create an MF2 formatter
+    const mf = new MessageFormat(message)
+    // Format the MF2 message to a linear sequence of parts
+    list = mf.formatToParts()
+  } catch(e) {
+    if (e instanceof MessageSyntaxError) {
+      return value
+    }
+    throw e
+  }
   // Reconstruct the tree of markup tags from the sequence
   const processed = MessagePartsToTree(list)
   // Map markup onto components
