@@ -20,6 +20,7 @@ export default function formatElements(
     list = mf.formatToParts()
   } catch(e) {
     if (e instanceof MessageSyntaxError) {
+      console.log("Warning: error when parsing message " + value + "\n" + JSON.stringify(e))
       return value
     }
     throw e
