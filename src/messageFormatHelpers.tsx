@@ -13,9 +13,9 @@ export function isMF2ComplexMessage(message: string) : boolean {
   // Note: there is an ambiguity because the message {{foo}} might
   // either be an MF2 complex message, or a message with a single
   // interpolated variable in next-translate's native format.
-  // We assume this is an MF2 message, but it might not always be correct.
+  // We assume this is *not* an MF2 message, but it might not always be correct.
   return (message.startsWith(".match") || message.startsWith(".local")
-   || message.startsWith(".input") || message.startsWith("{{"));
+   || message.startsWith(".input"));
 }
 
 // Converts markup placeholders to MF2
