@@ -47,7 +47,7 @@
   "scripts": {
     "build": "yarn clean && cross-env NODE_ENV=production && yarn tsc",
     "clean": "yarn clean:build && yarn clean:examples",
-    "clean:build": "rm -rf lib appWith* Dynamic* I18n* index context loadNa* setLang* Trans* useT* withT* getP* getC* *.d.ts getT transC* wrapT* types formatElements app-dir*",
+    "clean:build": "rm -rf lib appWith* Dynamic* I18n* index context loadNa* setLang* Trans* useT* withT* getP* getC* *.d.ts getT transC* wrapT* types formatElements app-dir* messageFormatHelpers",
     "clean:examples": "rm -rf examples/**/.next && rm -rf examples/**/node_modules && rm -rf examples/**/yarn.lock",
     "example": "yarn example:complex",
     "example:basic": "yarn build && yarn --cwd examples/basic && yarn --cwd examples/basic dev",
@@ -92,7 +92,8 @@
   },
   "peerDependencies": {
     "next": ">= 10.0.0",
-    "react": ">= 16.8.0"
+    "react": ">= 16.8.0",
+    "@types/react-dom": "18.0.10"
   },
   "prettier": {
     "trailingComma": "es5",

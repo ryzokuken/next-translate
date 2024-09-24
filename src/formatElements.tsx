@@ -1,44 +1,10 @@
+import { MessageFormat } from 'messageformat'
 import {
-  MessageFormat,
-  type MessagePart,
-  type MessageLiteralPart,
-  type MessageMarkupPart,
-} from 'messageformat'
-import React, { type ReactElement, type ReactNode } from 'react'
-
-const tagRe = /<(\w+)>(.*?)<\/\1>|<(\w+)\/>/
-const nlRe = /(?:\r\n|\r|\n)/g
-
-function getElements(
-  parts: Array<string | undefined>
-): Array<string | undefined>[] {
-  if (!parts.length) return []
-
-  const [paired, children, unpaired, after] = parts.slice(0, 4)
-
-  return [
-    [(paired || unpaired) as string, children || ('' as string), after],
-  ].concat(getElements(parts.slice(4, parts.length)))
-}
-
-// Converts markup placeholders to MF2
-// Note: Numeric markup tags are prefixed with an underscore
-// because in MF2, a markup tag name can't begin with a digit.
-// This is fixed up in HetListToDOMTree().
-function convertToMf2(message: string): string {
-  return message
-    .replace(/<(\d+\/?)>/g, '{#_$1}')
-    .replace(/<\/(\d+)>/g, '{/_$1}')
-    .replace(/<(\w+\/?)>/g, '{#$1}') // open/standalone
-    .replace(/<(\/\w+)>/g, '{$1}') // close
-}
-
-// Helper for HetListToDOMTree() that removes the underscores
-// that were added to numeric tag names
-function handleMarkupName(name: string): string {
-  if (name.charAt(0) === '_') return name.substring(1)
-  return name
-}
+  convertToMf2,
+  MessagePartsToTree,
+  TreeToElements,
+} from './messageFormatHelpers'
+import type { ReactElement, ReactNode } from 'react'
 
 export default function formatElements(
   value: string,
@@ -46,134 +12,13 @@ export default function formatElements(
 ): string | ReactNode[] {
   // Convert message to MF2 syntax
   const message = convertToMf2(value)
-  // Create a new MF2 formatter
+  // Create an MF2 formatter
   const mf = new MessageFormat(message)
-  // Format the MF2 message to a sequence of parts
+  // Format the MF2 message to a linear sequence of parts
   const list = mf.formatToParts()
-  // Reconstruct the tree of markup tags from the parts list
-  const processed = ProcessPartsList(list)
+  // Reconstruct the tree of markup tags from the sequence
+  const processed = MessagePartsToTree(list)
   // Map markup onto components
-  const contents = HetListToDOMTree(processed, elements)
+  const contents = TreeToElements(processed, elements)
   return contents
-}
-
-// Represents a tree constructed from the sequence of
-// formatted parts for a message
-type PartsList = Array<MessagePart | Markup>
-
-class Markup {
-  #markup: boolean
-  name: string
-  child: PartsList
-
-  constructor(name: string, child: PartsList) {
-    this.#markup = true
-    this.name = name
-    this.child = child
-  }
-
-  static isMarkup(obj: object): boolean {
-    return #markup in obj
-  }
-}
-
-// Takes a list of MessageParts that was produced by
-// MessageFormat's formatToParts(), and returns a tree
-function ProcessPartsList(parts: MessagePart[]): PartsList {
-  // Make a copy of `parts` so we can modify it
-  const toDo = [...parts]
-
-  // ProcessNodes() processes a flat list of message parts
-  // into a tree structure.
-  // (Currently only handles one level of nesting.)
-  // `accum` is the list of already-processed subtrees.
-  // The individual elements in the list are all `MessageParts`,
-  // but the lists in the returned value may be nested arbitrarily.
-  function ProcessNodes(accum: PartsList): PartsList {
-    if (toDo.length === 0) {
-      return accum
-    }
-    // Markup node: should be an `open` node if the output of formatToParts()
-    // is valid.
-    if (toDo[0].type === 'markup') {
-      const markupNode = toDo[0] as MessageMarkupPart
-      if (markupNode.kind === 'open') {
-        const openNode = toDo.shift() as MessageMarkupPart
-        // Recursively process everything between the open and close nodes
-        const tree = ProcessNodes([])
-        const closeNode = toDo.shift() as MessageMarkupPart
-        if (closeNode.kind !== 'close') {
-          console.log('Warning: unmatched tags!')
-        }
-        // Append a new subtree representing the tree denoted by this markup open/close pair
-        const subtree = new Markup(openNode.name, tree)
-        return ProcessNodes(accum.toSpliced(accum.length, 0, subtree))
-      }
-      // When we see a close tag, we just return the accumulator
-      if (markupNode.kind === 'close') {
-        return accum
-      }
-    }
-    // Default case (not markup): append onto the existing list
-    return ProcessNodes(accum.toSpliced(accum.length, 0, toDo.shift()!))
-  }
-  return ProcessNodes([])
-}
-
-// hetList is really a list of arbitrarily-nested lists where all the
-// leaf elements are MessageParts
-function HetListToDOMTree(
-  hetList: PartsList,
-  components: Record<string, ReactElement> | Array<ReactElement>
-): ReactElement[] {
-  return hetList.flatMap((part) => {
-    // part is either a (nested) list of MessageParts, or a single MessagePart
-    if (Markup.isMarkup(part)) {
-      // `subtree` is all the nodes between the open and the close
-      const markup = part as Markup
-      const subtree = HetListToDOMTree(markup.child, components)
-      // Remove the leading underscore, if necessary
-      const markupName = handleMarkupName(markup.name)
-      // Use the name of the open node to look up the component in the map
-      // (we assume open.name === close.name)
-      // TODO: this means overlapping tags don't work
-      let component: ReactElement = Array.isArray(components)
-        ? components[Number(markupName)]
-        : components[markupName]
-      // Finally, wrap the sublist in a component of the kind
-      // that matches its markup's name
-      return component
-        ? React.cloneElement(component, undefined, ...subtree)
-        : subtree
-    }
-    if (Array.isArray(part)) {
-      return HetListToDOMTree(part, components)
-    }
-    // If part is not an array, it must be a MessagePart
-    const messagePart = part as MessagePart
-    switch (messagePart.type) {
-      case 'literal':
-        // Literals are just strings
-        return <>{(messagePart as MessageLiteralPart).value}</>
-      case 'markup':
-        // assert part.kind=standalone
-        return React.cloneElement(
-          (components as Record<string, ReactElement>)[
-            (messagePart as MessageMarkupPart).name
-          ]
-        )
-      case 'number':
-      case 'datetime': {
-        return (
-          <>{messagePart.parts?.reduce((acc, part) => acc + part.value, '')}</>
-        )
-      }
-      case 'fallback': {
-        return <>{`{${messagePart.source}}`}</>
-      }
-      default: {
-        throw new Error(`unreachable: ${messagePart.type}`)
-      }
-    }
-  })
 }
