@@ -186,10 +186,6 @@ function plural(
   return key
 }
 
-function convertMessageSyntax(message: string): string {
-  return message
-}
-
 /**
  * Replace {{variables}} to query values
  */
@@ -238,10 +234,16 @@ function interpolation({
   }
 
   const whitespacesRE = '(?:\\s*)?'
+  // If the prefix is non-empty, replace the prefix followed by whitespace.
   const prefixRE = prefix ? `${escapeRegex(prefix)}${whitespacesRE}` : ''
+  // If the suffix is non-empty, replace whitespace followed by the suffix.
   const suffixRE = suffix ? `${whitespacesRE}${escapeRegex(suffix)}` : ''
+  // The entire variable reference is the prefix, followed by the variable
+  // reference, then the suffix.
   const varRE = new RegExp(`${prefixRE}([\\d\\w]+)(?:,.*?)?${suffixRE}`, 'g')
+  // Convert variable reference syntax to MF2.
   const mfText = text.replaceAll(varRE, '{$$$1}')
+  // Create an MF2 formatter and format the result as a string.
   const mf = new MessageFormat(mfText, lang)
   return mf.format(query)
 }

@@ -49,7 +49,7 @@ export default async function loadNamespaces(
   return {
     __lang,
     __namespaces: namespaces.reduce((obj: Record<string, object>, ns, i) => {
-      obj[ns] = pageNamespaces[i] || null
+      obj[ns] = pageNamespaces[i]
       return obj
     }, {}),
   }
