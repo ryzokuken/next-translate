@@ -1,51 +1,33 @@
-import React, { cloneElement, Fragment, ReactElement, ReactNode } from 'react'
-
-const tagRe = /<(\w+)>(.*?)<\/\1>|<(\w+)\/>/
-const nlRe = /(?:\r\n|\r|\n)/g
-
-function getElements(
-  parts: Array<string | undefined>
-): Array<string | undefined>[] {
-  if (!parts.length) return []
-
-  const [paired, children, unpaired, after] = parts.slice(0, 4)
-
-  return [
-    [(paired || unpaired) as string, children || ('' as string), after],
-  ].concat(getElements(parts.slice(4, parts.length)))
-}
+import { MessageFormat, MessageSyntaxError, type MessagePart } from 'messageformat'
+import {
+  convertToMf2,
+  MessagePartsToTree,
+  TreeToElements,
+} from './messageFormatHelpers'
+import type { ReactElement, ReactNode } from 'react'
 
 export default function formatElements(
   value: string,
   elements: ReactElement[] | Record<string, ReactElement> = []
 ): string | ReactNode[] {
-  const parts = value.replace(nlRe, '').split(tagRe)
-
-  if (parts.length === 1) return value
-
-  const tree = []
-
-  const before = parts.shift()
-  if (before) tree.push(before)
-
-  getElements(parts).forEach(([key, children, after], realIndex: number) => {
-    const element =
-      // @ts-ignore
-      elements[key as string] || <Fragment />
-
-    tree.push(
-      cloneElement(
-        element,
-        { key: realIndex },
-
-        // format children for pair tags
-        // unpaired tags might have children if it's a component passed as a variable
-        children ? formatElements(children, elements) : element.props.children
-      )
-    )
-
-    if (after) tree.push(after)
-  })
-
-  return tree
+  // Convert message to MF2 syntax
+  const message = convertToMf2(value)
+  let list : MessagePart[] = []
+  try {
+      // Create an MF2 formatter
+    const mf = new MessageFormat(message)
+    // Format the MF2 message to a linear sequence of parts
+    list = mf.formatToParts()
+  } catch(e) {
+    if (e instanceof MessageSyntaxError) {
+      console.log("Warning: error when parsing message " + value + "\n" + JSON.stringify(e))
+      return value
+    }
+    throw e
+  }
+  // Reconstruct the tree of markup tags from the sequence
+  const processed = MessagePartsToTree(list)
+  // Map markup onto components
+  const contents = TreeToElements(processed, elements)
+  return contents
 }
